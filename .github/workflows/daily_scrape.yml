@@ -1,0 +1,44 @@
+# .github/workflows/daily_scrape.yml
+# GitHub reads this file and automatically runs your scraper on a schedule.
+# No further configuration needed — just commit this file to your repo.
+
+name: Daily Material Price Scraper
+
+on:
+  schedule:
+    # Runs every day at 9:00 AM Eastern Time (13:00 UTC)
+    # Cron format: minute  hour  day  month  weekday
+    - cron: '0 13 * * *'
+
+  # Adds a "Run workflow" button on GitHub so you can trigger a scrape manually
+  workflow_dispatch:
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest   # GitHub provides this Linux machine for free
+
+    permissions:
+      contents: write        # Required to commit the updated prices.csv back to the repo
+
+    steps:
+      - name: Download your code from GitHub
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      - name: Run the scraper
+        run: python scraper.py
+
+      - name: Commit updated prices.csv to the repo
+        run: |
+          git config --global user.name  "Price Bot"
+          git config --global user.email "bot@github-actions.com"
+          git add data/prices.csv
+          git diff --staged --quiet || git commit -m "Daily prices: $(date +%Y-%m-%d)"
+          git push
